@@ -6,6 +6,22 @@ Reads the schema from `schema/invoices.sql`; feeds the page served by `api/invoi
 
 ---
 
+## Read-only safety rails (enforced, not just convention)
+
+Intuit's OAuth scope is coarse: `com.intuit.quickbooks.accounting` grants access to the *entire* accounting surface — invoices, customers, items, **and** bank accounts, chart of accounts, payments. There is no narrower "invoices-only" scope to request. So the real boundary is enforced in our own code, in three independent layers:
+
+| Layer | Where | What it refuses | Test |
+|---|---|---|---|
+| **1 — verb guard** | `QboClient._request` | Any `POST/PUT/DELETE/PATCH` against `/v3/company/...` raises `PermissionError` before a byte is sent. Only `GET` is allowed. | `test_readonly_refuses_write_verbs` |
+| **2 — entity allowlist** | `QboClient.query` / `.cdc` | Any query or CDC touching anything but `Invoice` (e.g. `Account`, `BankAccount`, `Payment`, `Customer`) raises `PermissionError`. `_ALLOWED_ENTITIES = {"Invoice"}`. | `test_readonly_refuses_non_invoice_entities` |
+| **3 — local DB read-only** | `invoices_api.py` | The serving API opens every connection with `PRAGMA query_only = 1`, so even a buggy endpoint cannot write `master.db`. | (existing) |
+
+`QboClient(read_only=True)` is the default and nothing in the codebase sets it `False`. A future caller that genuinely needs to write to QBO must opt in explicitly and loudly — there is no accidental path to mutation. The OAuth token-refresh `POST` goes to a *different* host (`oauth.platform.intuit.com`), not the company API, so it is unaffected by Layer 1.
+
+`test_readonly_still_allows_invoice_reads` confirms the rails don't break the legitimate invoice read path.
+
+---
+
 ## What this delivers
 
 ```

@@ -375,6 +375,72 @@ def test_sync_one_handles_404_via_soft_delete():
             print(f"  [pass] sync_one on missing invoice raised RuntimeError (operator-visible)")
 
 
+def test_readonly_refuses_write_verbs():
+    """Layer 1: any non-GET against the company API is refused in-process."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tok_path = Path(tmp) / "tokens.json"
+        mock = MockQbo()
+        mock.add_invoice(_invoice("1"))
+        client = _make_client(mock, tok_path)
+        client.get_invoice("1")  # prime token
+
+        for verb in ("POST", "PUT", "DELETE", "PATCH"):
+            try:
+                client._request(verb, f"/v3/company/{client.creds.realm_id}/invoice", json_body={})
+                assert False, f"{verb} should have been refused"
+            except PermissionError:
+                pass
+        # No write request should ever have reached the mock server
+        writes = [a for a in mock.attempts if a[0] in ("POST", "PUT", "DELETE", "PATCH") and "/v3/company" in a[1]]
+        assert not writes, f"a write leaked to the server: {writes}"
+        print("  [pass] POST/PUT/DELETE/PATCH to company API all refused before sending")
+
+
+def test_readonly_refuses_non_invoice_entities():
+    """Layer 2: queries/CDC for anything but Invoice are refused."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tok_path = Path(tmp) / "tokens.json"
+        mock = MockQbo()
+        client = _make_client(mock, tok_path)
+
+        for bad_sql in (
+            "SELECT * FROM Account",
+            "select * from BankAccount",
+            "SELECT * FROM Payment STARTPOSITION 1 MAXRESULTS 100",
+            "SELECT * FROM Customer",
+        ):
+            try:
+                client.query(bad_sql)
+                assert False, f"query should have been refused: {bad_sql}"
+            except PermissionError:
+                pass
+
+        try:
+            client.cdc(["Invoice", "Account"], "2026-01-01T00:00:00Z")
+            assert False, "CDC with Account should have been refused"
+        except PermissionError:
+            pass
+
+        # Confirm no non-invoice request reached the server
+        api_calls = [a for a in mock.attempts if "/v3/company" in a[1]]
+        assert not api_calls, f"a disallowed query leaked to the server: {api_calls}"
+        print("  [pass] Account/BankAccount/Payment/Customer queries + mixed CDC all refused")
+
+
+def test_readonly_still_allows_invoice_reads():
+    """The guards must not break the legitimate invoice read path."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tok_path = Path(tmp) / "tokens.json"
+        mock = MockQbo()
+        mock.add_invoice(_invoice("1"))
+        client = _make_client(mock, tok_path)
+        body = client.query("SELECT * FROM Invoice STARTPOSITION 1 MAXRESULTS 1000")
+        assert (body.get("QueryResponse") or {}).get("Invoice"), "invoice query should succeed"
+        cdc = client.cdc(["Invoice"], "2026-01-01T00:00:00Z")
+        assert "CDCResponse" in cdc
+        print("  [pass] Invoice query + Invoice CDC still work")
+
+
 def main() -> int:
     tests = [
         test_bootstrap_persists_rotated_refresh_token,
@@ -385,6 +451,9 @@ def main() -> int:
         test_backfill_paginates_and_upserts,
         test_cdc_pull_round_trip,
         test_sync_one_handles_404_via_soft_delete,
+        test_readonly_refuses_write_verbs,
+        test_readonly_refuses_non_invoice_entities,
+        test_readonly_still_allows_invoice_reads,
     ]
     failed = 0
     for t in tests:

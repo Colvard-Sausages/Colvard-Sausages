@@ -28,7 +28,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import httpx
 
@@ -40,6 +40,17 @@ _API_BASE = {
     "production": "https://quickbooks.api.intuit.com",
 }
 _MINOR_VERSION = 70  # QBO API minor version; safe modern default
+
+# ── Read-only safety rails ──────────────────────────────────────────────────
+# The invoice mirror must NEVER mutate QuickBooks, and must ONLY ever read
+# Invoice data — nothing about bank accounts, chart of accounts, payments, etc.
+# Intuit's OAuth scope is coarse (com.intuit.quickbooks.accounting grants the
+# whole accounting surface), so we enforce the real boundary HERE, in code:
+#   Layer 1: only GET verbs may hit the company API (no POST/PUT/DELETE).
+#   Layer 2: only the entities in _ALLOWED_ENTITIES may be queried (Invoice).
+# These raise PermissionError rather than failing silently.
+_ALLOWED_ENTITIES = {"Invoice"}
+_READ_ONLY_VERBS = {"GET"}
 
 
 @dataclass
@@ -122,12 +133,38 @@ class QboTokenStore:
 
 
 class QboClient:
-    def __init__(self, creds: QboCreds | None = None, http: httpx.Client | None = None):
+    def __init__(
+        self,
+        creds: QboCreds | None = None,
+        http: httpx.Client | None = None,
+        *,
+        read_only: bool = True,
+    ):
         self.creds = creds or QboCreds.from_env()
         self.store = QboTokenStore(self.creds.token_file)
         self.http = http or httpx.Client(timeout=30.0)
         self._tokens: TokenSet | None = None
         self._base = _API_BASE[self.creds.environment]
+        # Defaults to True and the codebase never sets it False. A future caller
+        # that wants to write to QBO must opt in explicitly and loudly.
+        self.read_only = read_only
+
+    def _assert_entities_allowed(self, entities: Iterable[str]) -> None:
+        """Layer 2: refuse any entity outside the invoice allowlist."""
+        if not self.read_only:
+            return
+        bad = sorted({e for e in entities if e not in _ALLOWED_ENTITIES})
+        if bad:
+            raise PermissionError(
+                f"read-only client refused entities {bad}; "
+                f"only {sorted(_ALLOWED_ENTITIES)} are permitted"
+            )
+
+    @staticmethod
+    def _entity_from_query(qbo_sql: str) -> str | None:
+        import re
+        m = re.search(r"\bFROM\s+([A-Za-z_]+)", qbo_sql, re.IGNORECASE)
+        return m.group(1) if m else None
 
     # ── Token lifecycle ────────────────────────────────────────────────────
     def _bootstrap_from_env(self) -> TokenSet:
@@ -175,6 +212,13 @@ class QboClient:
         self, method: str, path: str, *, params: dict | None = None,
         json_body: dict | None = None, max_attempts: int = 5,
     ) -> httpx.Response:
+        # Layer 1: read-only verb guard. Any mutation against the company API
+        # is refused before a single byte leaves the process.
+        if self.read_only and "/v3/company/" in path and method.upper() not in _READ_ONLY_VERBS:
+            raise PermissionError(
+                f"read-only client refused {method.upper()} {path}; "
+                f"only {sorted(_READ_ONLY_VERBS)} permitted against the QBO API"
+            )
         attempt = 0
         backoff = 1.0
         while True:
@@ -213,6 +257,9 @@ class QboClient:
     # ── High-level QBO operations ──────────────────────────────────────────
     def query(self, qbo_sql: str) -> dict[str, Any]:
         """Run a QBO SQL query. Returns the parsed response body."""
+        # Layer 2: refuse to query anything but Invoice.
+        entity = self._entity_from_query(qbo_sql)
+        self._assert_entities_allowed([entity] if entity else [])
         path = f"/v3/company/{self.creds.realm_id}/query"
         resp = self._request(
             "GET", path,
@@ -224,6 +271,8 @@ class QboClient:
 
     def cdc(self, entities: list[str], changed_since: str) -> dict[str, Any]:
         """QBO Change Data Capture endpoint."""
+        # Layer 2: refuse CDC on anything but Invoice.
+        self._assert_entities_allowed(entities)
         path = f"/v3/company/{self.creds.realm_id}/cdc"
         resp = self._request(
             "GET", path,
