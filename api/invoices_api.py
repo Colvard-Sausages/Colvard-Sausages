@@ -37,6 +37,11 @@ TZ = ZoneInfo("America/New_York")
 
 app = FastAPI(title="Colvard Invoices API", version="0.1.0")
 
+# QBO webhook receiver (optional; only enabled if QBO_WEBHOOK_VERIFIER_TOKEN set)
+if os.environ.get("QBO_WEBHOOK_VERIFIER_TOKEN"):
+    from api.sync.webhook import router as webhook_router
+    app.include_router(webhook_router)
+
 # Dev convenience: serve the dashboard HTML alongside the API so the page can
 # use same-origin relative paths to /api/*. In prod the dashboards are usually
 # served by the existing static host; this mount is harmless either way.
