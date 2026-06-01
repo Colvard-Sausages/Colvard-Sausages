@@ -14,14 +14,14 @@ When you're done, the page will reflect QBO changes within 60 seconds (or <5s if
 4. Choose **QuickBooks Online and Payments**. Name it `Colvard Dashboards`.
 5. Skip the Payments scope. Tick only **com.intuit.quickbooks.accounting**.
 6. After creation, click **Keys & credentials** in the left nav.
-7. On the **Production** tab (not Development), copy these two and paste them into the box below — keep this file local, do NOT commit it:
+7. **Stay on the Development tab** (the default). Do NOT switch to Production — that tab is gated behind a multi-day app review (App URL, privacy policy URL, EULA URL, host domain, IP allowlists) that's overkill for this. Development gives you the full QBO API against a sandbox copy of QuickBooks; we'll graduate to Production after the integration is proven end-to-end.
+8. Copy the **Development** Client ID and Client Secret into your local notes — keep this file local, do NOT commit it:
 
    ```
-   QBO_CLIENT_ID=<paste production client id>
-   QBO_CLIENT_SECRET=<paste production client secret>
+   QBO_CLIENT_ID=<dev client id>
+   QBO_CLIENT_SECRET=<dev client secret>
+   QBO_ENVIRONMENT=sandbox
    ```
-
-> If you'd rather test against sandbox first, copy the **Development** keys and set `QBO_ENVIRONMENT=sandbox` later.
 
 ---
 
@@ -40,12 +40,12 @@ This lets Intuit's OAuth Playground (next step) hand a token back to you.
 ## Step 3 — Get the refresh_token and realm_id (5 min)
 
 1. Open **https://developer.intuit.com/app/developer/playground**
-2. Top of the page, pick **Production** (or **Sandbox** if you chose that above).
+2. Top of the page, pick **Sandbox**.
 3. **Scope:** check `com.intuit.quickbooks.accounting`. Leave the others off.
 4. Click **Get authorization code**.
-5. A QuickBooks login window opens — sign in, then click **Connect** and pick **Colvard & Company LLC** when prompted.
+5. A QuickBooks login window opens — sign in. Intuit auto-creates a sandbox company on first use; pick it when prompted.
 6. You're bounced back to the Playground with a code shown. Click **Get tokens**.
-7. Two values appear: **Refresh Token** and **Realm ID** (the Realm ID is a 17-digit number).
+7. Two values appear: **Refresh Token** and **Realm ID** (the Realm ID is a 17-digit number for the sandbox company, not Colvard's real QBO).
 
    ```
    QBO_REFRESH_TOKEN=<paste refresh token>
@@ -67,7 +67,7 @@ export QBO_CLIENT_ID=...
 export QBO_CLIENT_SECRET=...
 export QBO_REFRESH_TOKEN=...
 export QBO_REALM_ID=...
-export QBO_ENVIRONMENT=production   # or 'sandbox' if you used dev keys
+export QBO_ENVIRONMENT=sandbox      # 'production' once you graduate (see bottom of doc)
 export COLVARD_DB_PATH=/path/to/master.db
 
 python3 -m api.sync.cli backfill --since 2026-01-01
@@ -134,6 +134,24 @@ Polling gets you to ≤60s. If you want closer to real-time, you need a public H
 4. Restart `invoices_api.py` so the webhook router auto-mounts (it checks for `QBO_WEBHOOK_VERIFIER_TOKEN` at import time).
 
 The 60s cron stays running as a reconciliation layer — it catches webhook deliveries that QBO drops or that fail signature verify.
+
+---
+
+## Graduating to Production (real Colvard QBO data)
+
+Once sandbox is end-to-end (sandbox invoices show on the page), repeat the flow with Production keys:
+
+1. Same Intuit Developer app → **Keys & credentials** → **Production** tab → fill the app-review form:
+   - **App URL:** `https://localhost` is acceptable for an internal app.
+   - **EULA URL** and **Privacy Policy URL:** one-page text stubs hosted as public GitHub Gists work fine. (Ask and I'll generate the stub content.)
+   - **Host domain:** whatever box runs sync.
+   - **Redirect URI:** `https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl`
+2. Submit. Intuit usually approves in 1–3 business days for internal apps.
+3. Once approved, run Step 3 again with the **Production** tab in the OAuth Playground, against your real Colvard QBO company. Save the new `refresh_token` and `realm_id`.
+4. Update env: `QBO_ENVIRONMENT=production` and the new client/secret/refresh/realm values.
+5. Re-run `python3 -m api.sync.cli backfill --since 2026-01-01`.
+
+The schema, code, and tests don't change between sandbox and production — only the credentials and the `QBO_ENVIRONMENT` flag.
 
 ---
 
