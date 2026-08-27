@@ -1,0 +1,53 @@
+name: test
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  schema-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime deps
+        run: pip install fastapi 'uvicorn[standard]' httpx
+      - name: Validate schema (idempotent, indexes, constraints)
+        run: |
+          python3 -c "
+          import sqlite3
+          c = sqlite3.connect(':memory:')
+          c.execute('PRAGMA foreign_keys = ON')
+          with open('schema/invoices.sql') as f:
+              c.executescript(f.read())
+              c.executescript(f.read())  # idempotency
+          assert c.execute('PRAGMA user_version').fetchone()[0] == 1
+          tables = {n for (n,) in c.execute(\"SELECT name FROM sqlite_master WHERE type='table'\")}
+          assert tables >= {'invoices', 'invoice_lines', 'invoice_sync_state', 'invoice_sync_log'}, tables
+          print('schema OK')
+          "
+      - name: Sync logic tests
+        run: python3 scripts/test_sync_logic.py
+      - name: QBO client integration tests (mock transport)
+        run: python3 scripts/test_qbo_client.py
+      - name: Seed + API smoke test
+        run: |
+          python3 scripts/seed_demo_data.py --db /tmp/ci.db
+          COLVARD_DB_PATH=/tmp/ci.db python3 -m uvicorn api.invoices_api:app --port 8765 &
+          SERVER_PID=$!
+          # Wait for server
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fs http://127.0.0.1:8765/healthz && break || sleep 0.5
+          done
+          curl -fs http://127.0.0.1:8765/healthz
+          curl -fs 'http://127.0.0.1:8765/api/invoices?week=both' | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          weeks = d['weeks']
+          assert len(weeks) == 2, weeks
+          assert sum(w['count'] for w in weeks) > 0
+          print('api OK')
+          "
+          kill $SERVER_PID
