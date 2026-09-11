@@ -1,0 +1,70 @@
+{
+  "_provenance": {
+    "source": "Colvard-fonts-colors.pdf (Adobe InDesign 17.2, created 2022-03-29)",
+    "drive_folder": "Colvard-logo-library-2022",
+    "drive_file_id": "1Z3Y_-chUtpggoCY7_w_JmXiTqtQvc2uW",
+    "extracted": "2026-09-11",
+    "note": "CMYK values are the authoritative brand builds. The hex values are the sRGB rendering of those CMYK builds as produced by poppler (pdftoppm -r 150) and are used for screen/HTML only. Do not treat hex as the brand definition."
+  },
+
+  "brand_colors": {
+    "charcoal": { "cmyk": [68, 69, 66, 82], "hex": "#191212", "role": "Primary field / all display and body type on cream" },
+    "cream":    { "cmyk": [6, 5, 9, 0],     "hex": "#ECEAE3", "role": "Panels, reversed type on charcoal" }
+  },
+
+  "flavor_colors": {
+    "jalapeno_cheddar": { "cmyk": [65, 21, 78, 4],  "hex": "#649960" },
+    "garlic_thyme":     { "cmyk": [35, 45, 18, 1],  "hex": "#A88DA8" },
+    "chorizo":          { "cmyk": [7, 63, 89, 2],   "hex": "#E07A36" },
+    "sesame_sriracha":  { "cmyk": [6, 82, 89, 2],   "hex": "#DE5332" },
+    "maple_sage":       { "cmyk": [28, 51, 78, 9],  "hex": "#AE7C4B" },
+    "spicy_fennel":     { "cmyk": [21, 39, 100, 2], "hex": "#C9982B" },
+    "smoked_kielbasa":  { "cmyk": [64, 26, 57, 4],  "hex": "#64947C" }
+  },
+
+  "derived": {
+    "_note": "Not in the brand book. Derived for this piece only, by darkening the named flavor colour until cream type clears 4.5:1. Each carries the flavour it was derived from so the relationship to the brand is traceable.",
+    "panel_a_field": { "hex": "#A32E13", "derived_from": "sesame_sriracha", "role": "Panel A field (sausage case raffle)" },
+    "panel_b_field": { "hex": "#6E4520", "derived_from": "maple_sage",      "role": "Panel B field (breakfast box raffle)" },
+    "rule_gold":     { "hex": "#C9982B", "derived_from": "spicy_fennel",    "role": "Hairline rules and frames ONLY. Never body copy on cream (2.4:1)." },
+    "muted":         { "hex": "#625D5A", "derived_from": "charcoal",        "role": "Sampled from the brand book's own caption type." }
+  },
+
+  "typography": {
+    "_substitution_notice": "The three brand faces are licensed and no font files exist in the Colvard Drive. All three are substituted with metrically comparable SIL OFL faces. This is a visible deviation from the brand book and must be signed off before print, or the art rebuilt in InDesign with the licensed faces.",
+    "display": {
+      "brand_face": "Termina",
+      "brand_spec": { "weight": "Bold", "size_pt": 18, "leading_pt": 20, "tracking": 60, "horizontal_scale": "95%", "transform": "All caps" },
+      "substitute": "Archivo (variable, wdth 62-125 / wght 400-900)",
+      "substitute_rationale": "Termina is a wide geometric grotesque. Archivo's width axis reaches a comparable set width; tracking and 95% horizontal scale are reproduced directly in CSS.",
+      "file": "assets/fonts/archivo-var.woff2",
+      "license": "SIL OFL 1.1"
+    },
+    "body": {
+      "brand_face": "Pragmatica",
+      "brand_spec": { "weight": "Condensed Book", "size_pt": 8, "leading_pt": 10, "transform": "All caps" },
+      "substitute": "Archivo Narrow (variable, wght 400-700)",
+      "substitute_rationale": "Pragmatica is a Helvetica-lineage neo-grotesque; Archivo Narrow is the closest OFL condensed neo-grotesque and shares a superfamily with the display face.",
+      "file": "assets/fonts/archivo-narrow-var.woff2",
+      "license": "SIL OFL 1.1"
+    },
+    "script": {
+      "brand_face": "Alkaline",
+      "brand_spec": { "weight": "Demi", "size_pt": 17, "leading_pt": 18, "tracking": 0 },
+      "substitute": "Caveat Brush",
+      "substitute_rationale": "Alkaline is a connected, slanted monoline brush script (it sets 'Handcrafted' and 'Sausages' inside the logo lockup). Caveat Brush is the nearest OFL brush face. The match is the weakest of the three - it is unconnected where Alkaline connects. Used for one accent line only; the logo lockup carries real Alkaline as vector outlines, so the mark itself is unaffected.",
+      "file": "assets/fonts/caveat-brush.woff2",
+      "license": "SIL OFL 1.1"
+    }
+  },
+
+  "logo": {
+    "primary": {
+      "file": "assets/logo/colvard-full-logo.svg",
+      "source": "Colvard-full-logo-white.pdf (vector, 500 x 501.011 pt)",
+      "drive_file_id": "1Y7v-xMgTuU2qtq7ciO9WSzb41qJaO4pV",
+      "conversion": "pdftocairo -svg; all 143 path fills rewritten to currentColor so one file serves both polarities",
+      "note": "Type inside the lockup is already outlined, so no font dependency."
+    }
+  }
+}
