@@ -1,0 +1,73 @@
+{
+  "_note": "Single source of truth. Every string on every deliverable comes from here. Copy marked \"verbatim\" is reproduced exactly as supplied in the brief and must not be edited without sign-off.",
+
+  "eyebrow": "HAMPDEN GRANGE x COLVARD SAUSAGES",
+  "headline": ["FILL THE", "FREEZER"],
+  "headline_flat": "FILL THE FREEZER",
+  "subhead": "18 pounds of Colvard sausage. Two winners.",
+
+  "price_hero": "$2 A TICKET",
+  "price_ladder": [
+    { "qty": "1",  "price": "$2",  "label": "each",     "best": false },
+    { "qty": "3",  "price": "$5",  "label": "3 for $5", "best": false },
+    { "qty": "10", "price": "$15", "label": "10 for $15", "best": true, "flag": "BEST VALUE" }
+  ],
+  "price_ladder_flat": "$2 each  |  3 for $5  |  10 for $15",
+
+  "scarcity": "Only 400 tickets",
+  "buy": {
+    "table": "Tickets at the Colvard table — cash or check",
+    "advance": "Tickets at Colvard, Ellsworth, and from any wrestler"
+  },
+  "draw": "Drawn Saturday, December 19 at 3:00 PM",
+  "second_prize": "Second prize: Colvard specialty box",
+  "cause": "Every ticket sends Maine wrestlers to [DESTINATION]",
+
+  "event": {
+    "name": "The Paul Bunyan Invitational",
+    "venue": "Cross Insurance Center",
+    "city": "Bangor, Maine",
+    "dates": "December 18–19, 2026",
+    "flat": "The Paul Bunyan Invitational · Cross Insurance Center · Bangor, Maine · December 18–19, 2026"
+  },
+
+  "footer": "Conducted by Hampden Grange. Prizes donated by Colvard Sausages, Ellsworth, Maine.",
+
+  "qr": {
+    "caption": "Rules & odds",
+    "placeholder": true,
+    "target": "RULES PAGE URL — NOT A CHECKOUT",
+    "note": "Placeholder block only. Links to the rules page. Never a payment or checkout destination."
+  },
+
+  "open_items": {
+    "DESTINATION": {
+      "status": "UNRESOLVED",
+      "appears_in": "cause",
+      "note": "Named destination for the wrestlers (e.g. a national tournament and its city). Blocks print."
+    },
+    "qr.target": {
+      "status": "UNRESOLVED",
+      "appears_in": "qr",
+      "note": "Rules page must exist and be live before the QR is generated."
+    },
+    "hampden_grange_logo": {
+      "status": "MISSING ASSET",
+      "note": "No Hampden Grange logo file was supplied to this session and none exists in the Colvard Drive. Every layout reserves a correctly-proportioned slot for it."
+    },
+    "hero_photograph": {
+      "status": "STAND-IN",
+      "note": "No photograph of 18 lb of sausage with cases open exists in the Colvard library. The comps composite real Colvard retail packshots. See README."
+    }
+  },
+
+  "legal": {
+    "operator": "Hampden Grange",
+    "donor": "Colvard Sausages",
+    "prize_total_retail_estimate_usd": 320,
+    "registration_required": false,
+    "basis": "17 M.R.S. §1837-A — no registration where total prize value does not exceed $2,500 (any conductor) or $10,000 (eligible organization). Estimated total prize value here is roughly $320, an order of magnitude below the lower threshold.",
+    "seller_age_rule": "§1837-A(5): raffle tickets may not be SOLD BY a person under 18, except for raffles under subsections 2 and 3 designed to benefit children's activities at an event generally attended by persons under 18. This raffle plausibly falls in that exception — confirm before staffing the table with wrestlers.",
+    "purchaser_age_rule": "§1837-A imposes no minimum purchaser age for a paper raffle. The 18+ purchaser restriction in subsection 7 applies to INTERNET raffles only."
+  }
+}

@@ -1,0 +1,12 @@
+# Runs colvard-sync.service every 60 seconds.
+[Unit]
+Description=Run Colvard QBO sync every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=colvard-sync.service
+
+[Install]
+WantedBy=timers.target
