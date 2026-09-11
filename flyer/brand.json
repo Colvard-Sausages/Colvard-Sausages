@@ -31,7 +31,8 @@
   },
 
   "typography": {
-    "_substitution_notice": "The three brand faces are licensed and no font files exist in the Colvard Drive. All three are substituted with metrically comparable SIL OFL faces. This is a visible deviation from the brand book and must be signed off before print, or the art rebuilt in InDesign with the licensed faces.",
+    "_substitution_notice": "The three brand faces are licensed and no font files exist in the Colvard Drive. Substitutes are metrically comparable SIL OFL faces. This is a visible deviation from the brand book and must be signed off before print, or the art rebuilt in InDesign with the licensed faces.",
+    "_in_use": "Only 'display' (Archivo) and 'body' (Archivo Narrow) are used by any direction — two families, per the brief's limit. The 'script' entry is documented and its file is on hand, but nothing currently sets type in it.",
     "display": {
       "brand_face": "Termina",
       "brand_spec": { "weight": "Bold", "size_pt": 18, "leading_pt": 20, "tracking": 60, "horizontal_scale": "95%", "transform": "All caps" },
@@ -52,9 +53,10 @@
       "brand_face": "Alkaline",
       "brand_spec": { "weight": "Demi", "size_pt": 17, "leading_pt": 18, "tracking": 0 },
       "substitute": "Caveat Brush",
-      "substitute_rationale": "Alkaline is a connected, slanted monoline brush script (it sets 'Handcrafted' and 'Sausages' inside the logo lockup). Caveat Brush is the nearest OFL brush face. The match is the weakest of the three - it is unconnected where Alkaline connects. Used for one accent line only; the logo lockup carries real Alkaline as vector outlines, so the mark itself is unaffected.",
+      "substitute_rationale": "Alkaline is a connected, slanted monoline brush script (it sets 'Handcrafted' and 'Sausages' inside the logo lockup). Caveat Brush is the nearest OFL brush face, and the match is the weakest of the three - it is unconnected where Alkaline connects. That weakness is why no direction uses it: the two-family limit was spent on display and body instead. The logo lockup carries real Alkaline as vector outlines, so the mark itself is unaffected either way.",
       "file": "assets/fonts/caveat-brush.woff2",
-      "license": "SIL OFL 1.1"
+      "license": "SIL OFL 1.1",
+      "used_by_any_direction": false
     }
   },
 
