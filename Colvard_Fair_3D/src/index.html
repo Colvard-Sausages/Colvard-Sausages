@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Colvard Sausages at Common Ground</title>
+    <meta name="description" content="Take a 3D look at our tent at the 50th Common Ground Country Fair in Unity, Maine, September 25 to 27." />
+    <meta property="og:title" content="Colvard Sausages at Common Ground" />
+    <meta property="og:description" content="Take a 3D look at our tent at the 50th Common Ground Country Fair in Unity, Maine, September 25 to 27." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="./overlay.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="gl"></canvas>
+      <div id="overlay" aria-hidden="true">
+        <div class="intro"><p>This weekend in Unity, Maine</p></div>
+        <div class="endcard">
+          <div class="endcard-bg"></div>
+          <div class="endcard-content">
+            <img class="logo" alt="" />
+            <h1>Colvard Sausages</h1>
+            <p class="line">On the grill at the 50th Common Ground Country Fair</p>
+            <p class="dates">September 25 to 27</p>
+          </div>
+        </div>
+      </div>
+      <div id="ui">
+        <div class="panel" id="info">
+          <p>
+            <strong>Colvard Sausages</strong> at the 50th Common Ground Country Fair. Unity, Maine, September 25
+            to 27. Fairgrounds open 9 a.m. to 6 p.m. Friday and Saturday, 9 a.m. to 5 p.m. Sunday.
+          </p>
+          <button type="button" id="replay">Replay the flyover</button>
+        </div>
+      </div>
+      <div class="loading" id="loading">Setting up the fair</div>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

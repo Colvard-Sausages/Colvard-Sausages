@@ -1,0 +1,245 @@
+@font-face {
+  font-family: 'Zilla Slab';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../assets/fonts/ZillaSlab-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Zilla Slab';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('../assets/fonts/ZillaSlab-Bold.woff2') format('woff2');
+}
+
+:root {
+  --cream: #fff7ea;
+  --ink: #1d1611;
+  --shadow: 0 0.12em 0.6em rgba(20, 12, 6, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #1d1611;
+  overflow: hidden;
+  font-family: 'Zilla Slab', Georgia, serif;
+  color: var(--cream);
+}
+
+#stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  container-type: size;
+}
+
+body.render #stage {
+  width: var(--w);
+  height: var(--h);
+}
+
+#gl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Text stays out of the top 14% and bottom 20% of the frame, and 90 px (8.4% of 1080) from the sides. */
+.intro {
+  position: absolute;
+  top: 16.5cqh;
+  left: 9cqw;
+  right: 9cqw;
+  text-align: center;
+  opacity: 0;
+}
+
+.intro::before {
+  content: '';
+  position: absolute;
+  inset: -40% -12%;
+  background: radial-gradient(closest-side, rgba(28, 16, 8, 0.38), rgba(28, 16, 8, 0));
+  z-index: -1;
+}
+
+.intro p {
+  margin: 0;
+  font-weight: 400;
+  font-size: min(7.4cqw, 4.2cqh);
+  line-height: 1.12;
+  text-wrap: balance;
+  text-shadow: var(--shadow);
+}
+
+.endcard {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.endcard-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 24cqh;
+  bottom: 24cqh;
+  background: linear-gradient(
+    to bottom,
+    rgba(22, 13, 7, 0) 0%,
+    rgba(22, 13, 7, 0.5) 26%,
+    rgba(22, 13, 7, 0.58) 50%,
+    rgba(22, 13, 7, 0.5) 74%,
+    rgba(22, 13, 7, 0) 100%
+  );
+  opacity: 0;
+}
+
+.endcard-content {
+  position: relative;
+  width: 100%;
+  padding: 0 9cqw;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.endcard .logo {
+  display: block;
+  max-width: min(58cqw, 60cqh);
+  max-height: 13cqh;
+  width: auto;
+  height: auto;
+  margin-bottom: min(3.2cqw, 1.8cqh);
+  opacity: 0;
+  filter: drop-shadow(0 0.4cqh 1.2cqh rgba(0, 0, 0, 0.35));
+}
+
+.endcard h1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: min(10.4cqw, 5.9cqh);
+  line-height: 1.02;
+  letter-spacing: 0.005em;
+  text-shadow: var(--shadow);
+  opacity: 0;
+}
+
+.endcard .line {
+  margin: min(2.6cqw, 1.5cqh) 0 0;
+  font-weight: 400;
+  font-size: min(5.6cqw, 3.2cqh);
+  line-height: 1.2;
+  text-shadow: var(--shadow);
+  max-width: 34ch;
+  text-wrap: balance;
+  opacity: 0;
+}
+
+.endcard .dates {
+  margin: min(2.2cqw, 1.3cqh) 0 0;
+  font-weight: 400;
+  font-size: min(6.4cqw, 3.6cqh);
+  line-height: 1.2;
+  text-shadow: var(--shadow);
+  opacity: 0;
+}
+
+/* Interactive-only interface. */
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+body.render #ui {
+  display: none;
+}
+
+.panel {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  max-width: 460px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(29, 22, 17, 0.72);
+  backdrop-filter: blur(6px);
+  font-size: 16px;
+  line-height: 1.4;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.panel.show {
+  opacity: 1;
+  transform: none;
+}
+
+.panel p {
+  margin: 0 0 10px;
+}
+
+.panel strong {
+  font-weight: 700;
+}
+
+.panel button {
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--cream);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.panel button:focus-visible {
+  outline: 3px solid #d9a441;
+  outline-offset: 2px;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--cream);
+  background: #1d1611;
+  transition: opacity 0.5s ease;
+}
+
+.loading.done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.render .loading {
+  display: none;
+}
