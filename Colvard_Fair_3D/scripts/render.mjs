@@ -103,7 +103,7 @@ async function launch(headless) {
   if (mode === 'd3d11') args.push('--use-angle=d3d11');
   if (mode === 'swiftshader') args.push('--use-angle=swiftshader', '--enable-unsafe-swiftshader');
   if (process.platform === 'linux') args.push('--no-sandbox');
-  const opts = { headless, args, protocolTimeout: 600000 };
+  const opts = { headless, args, protocolTimeout: 180000 };
   if (process.env.CHROME_PATH) opts.executablePath = process.env.CHROME_PATH;
   log(`Launching browser: headless=${headless}, gl=${mode}${opts.executablePath ? `, executable=${opts.executablePath}` : ''}`);
   return puppeteer.launch(opts);
@@ -178,9 +178,16 @@ async function video(format, workers, resume) {
   const frameFile = (i) => path.join(FRAMES, `frame_${String(i).padStart(4, '0')}.png`);
   const { browser, page } = await openWithFallback(format);
   const pages = [page];
+  // Each extra worker gets its own browser: background tabs in one browser stop producing frames,
+  // which makes their screenshots hang.
+  const extra = [];
   try {
     await checkGl(page);
-    for (let i = 1; i < workers; i++) pages.push(await openPage(browser, format));
+    for (let i = 1; i < workers; i++) {
+      const b = await launch(true);
+      extra.push(b);
+      pages.push(await openPage(b, format));
+    }
     log(`Rendering ${FRAME_COUNT} frames at ${spec.w}x${spec.h} with ${pages.length} worker page(s)`);
     const started = Date.now();
     let done = 0;
@@ -216,6 +223,7 @@ async function video(format, workers, resume) {
     }
   } finally {
     await browser.close();
+    for (const b of extra) await b.close();
   }
 
   for (let i = 0; i < FRAME_COUNT; i++) if (!fs.existsSync(frameFile(i))) fail(`Missing frame ${i}`);
