@@ -12,7 +12,7 @@ export const COLVARD = {
   size: 6.1,
   eave: 2.7,
   peak: 4.3,
-  valanceDepth: 0.56,
+  valanceDepth: 0.62,
 };
 
 export const GRILL = { x: -1.2, z: 3.3, top: 0.9, w: 1.3, d: 0.62 };

@@ -65,6 +65,43 @@ async function rasteriseSvg(url) {
   return c;
 }
 
+// A logo on a flat white background becomes ink on transparent, in two colours:
+// dark ink for the cream tent fabric and cream ink for the dark end card.
+function knockOutWhite(img) {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const data = g.getImageData(0, 0, w, h);
+  const px = data.data;
+  const lumAt = (x, y) => {
+    const i = (y * w + x) * 4;
+    return px[i + 3] < 250 ? 0 : (px[i] + px[i + 1] + px[i + 2]) / 765;
+  };
+  const corners = [lumAt(0, 0), lumAt(w - 1, 0), lumAt(0, h - 1), lumAt(w - 1, h - 1)];
+  if (Math.min(...corners) < 0.9) return null;
+  const tint = (rgb) => {
+    const out = new ImageData(w, h);
+    for (let i = 0; i < px.length; i += 4) {
+      const lum = (px[i] + px[i + 1] + px[i + 2]) / 765;
+      const k = Math.min(1, Math.max(0, (0.93 - lum) / 0.55));
+      out.data[i] = rgb[0];
+      out.data[i + 1] = rgb[1];
+      out.data[i + 2] = rgb[2];
+      out.data[i + 3] = Math.round(k * k * (3 - 2 * k) * 255);
+    }
+    const oc = document.createElement('canvas');
+    oc.width = w;
+    oc.height = h;
+    oc.getContext('2d').putImageData(out, 0, 0);
+    return oc;
+  };
+  return { dark: tint([27, 21, 18]), light: tint([255, 247, 234]) };
+}
+
 export async function loadLogo() {
   const entries = Object.entries(found);
   if (entries.length) {
@@ -73,6 +110,10 @@ export async function loadLogo() {
     const source = isSvg ? await rasteriseSvg(url) : await loadImage(url);
     const w = source.naturalWidth || source.width;
     const h = source.naturalHeight || source.height;
+    const inks = knockOutWhite(source);
+    if (inks) {
+      return { source: inks.dark, aspect: w / h, url: inks.light.toDataURL('image/png'), placeholder: false };
+    }
     const dataUrl = isSvg ? source.toDataURL('image/png') : url;
     return { source, aspect: w / h, url: dataUrl, placeholder: false };
   }

@@ -5,9 +5,11 @@ Procedural three.js scene of the Colvard tent at the 50th Common Ground Country 
 
 ## Status
 
-- Reel (9x16) pipeline built and rendered as a first draft.
-- Logo is a generated placeholder badge until `scripts/select_logo.py` copies the real file to
-  `assets/logo.*`. Rebuild after adding it.
+- Reel (9x16) rendered with the Colvard & Co logo (`assets/logo.jpg`). A logo on a plain white
+  background is knocked out to ink: dark on the tent fabric, cream on the end card.
+- Overlay type is Archivo (wide setting) to match the logo's extended lettering, per the brief's
+  typeface rule; Zilla Slab is kept for the chalkboard.
+- To swap the logo, run `scripts/select_logo.py`, then rebuild.
 - Not done yet: 4x5 feed render, link-preview still, Cloudflare Pages deploy (all supported by the
   scripts, not yet run).
 
@@ -37,4 +39,4 @@ Environment overrides: `CHROME_PATH`, `FFMPEG_PATH`, `FFPROBE_PATH`, `RENDER_GL`
   `overlay.js` (timed text), `logo.js`, `layout.js`, `util.js` (seeded PRNG, noise, easing).
 - Everything that moves is a pure function of `t`; all randomness comes from a fixed seed.
 
-Fonts: Zilla Slab (SIL Open Font License, `assets/fonts/OFL-LICENSE.txt`). All geometry is procedural.
+Fonts: Archivo and Zilla Slab (SIL Open Font License, see `assets/fonts/`). All geometry is procedural.

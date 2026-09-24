@@ -6,6 +6,16 @@
   src: url('../assets/fonts/ZillaSlab-Regular.woff2') format('woff2');
 }
 
+/* Archivo, wide setting, to match the geometric extended lettering of the Colvard & Co logo. */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+  src: url('../assets/fonts/Archivo-Variable.woff2') format('woff2');
+}
+
 @font-face {
   font-family: 'Zilla Slab';
   font-style: normal;
@@ -30,7 +40,8 @@ body {
   height: 100%;
   background: #1d1611;
   overflow: hidden;
-  font-family: 'Zilla Slab', Georgia, serif;
+  font-family: 'Archivo', 'Zilla Slab', system-ui, sans-serif;
+  font-stretch: 112%;
   color: var(--cream);
 }
 
@@ -83,8 +94,8 @@ body.render #stage {
 .intro p {
   margin: 0;
   font-weight: 400;
-  font-size: min(7.4cqw, 4.2cqh);
-  line-height: 1.12;
+  font-size: min(6.6cqw, 3.75cqh);
+  line-height: 1.14;
   text-wrap: balance;
   text-shadow: var(--shadow);
 }
@@ -106,9 +117,9 @@ body.render #stage {
   background: linear-gradient(
     to bottom,
     rgba(22, 13, 7, 0) 0%,
-    rgba(22, 13, 7, 0.5) 26%,
-    rgba(22, 13, 7, 0.58) 50%,
-    rgba(22, 13, 7, 0.5) 74%,
+    rgba(22, 13, 7, 0.66) 22%,
+    rgba(22, 13, 7, 0.74) 50%,
+    rgba(22, 13, 7, 0.66) 78%,
     rgba(22, 13, 7, 0) 100%
   );
   opacity: 0;
@@ -126,8 +137,8 @@ body.render #stage {
 
 .endcard .logo {
   display: block;
-  max-width: min(58cqw, 60cqh);
-  max-height: 13cqh;
+  max-width: min(74cqw, 62cqh);
+  max-height: 11.5cqh;
   width: auto;
   height: auto;
   margin-bottom: min(3.2cqw, 1.8cqh);
@@ -137,10 +148,11 @@ body.render #stage {
 
 .endcard h1 {
   margin: 0;
-  font-weight: 700;
-  font-size: min(10.4cqw, 5.9cqh);
-  line-height: 1.02;
-  letter-spacing: 0.005em;
+  font-weight: 800;
+  font-stretch: 125%;
+  font-size: min(8.6cqw, 4.9cqh);
+  line-height: 1.04;
+  letter-spacing: -0.005em;
   text-shadow: var(--shadow);
   opacity: 0;
 }
@@ -148,8 +160,8 @@ body.render #stage {
 .endcard .line {
   margin: min(2.6cqw, 1.5cqh) 0 0;
   font-weight: 400;
-  font-size: min(5.6cqw, 3.2cqh);
-  line-height: 1.2;
+  font-size: min(5cqw, 2.85cqh);
+  line-height: 1.24;
   text-shadow: var(--shadow);
   max-width: 34ch;
   text-wrap: balance;
@@ -159,7 +171,8 @@ body.render #stage {
 .endcard .dates {
   margin: min(2.2cqw, 1.3cqh) 0 0;
   font-weight: 400;
-  font-size: min(6.4cqw, 3.6cqh);
+  font-weight: 600;
+  font-size: min(5.6cqw, 3.2cqh);
   line-height: 1.2;
   text-shadow: var(--shadow);
   opacity: 0;

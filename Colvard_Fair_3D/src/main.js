@@ -41,6 +41,8 @@ async function init() {
   await Promise.all([
     document.fonts.load('400 64px "Zilla Slab"'),
     document.fonts.load('700 64px "Zilla Slab"'),
+    document.fonts.load('400 64px "Archivo"'),
+    document.fonts.load('800 64px "Archivo"'),
   ]);
   await document.fonts.ready;
   const logo = await loadLogo();

@@ -288,7 +288,7 @@ export function buildColvardTent(scene, logo) {
   vg.fillRect(0, 0, vw, vh * 0.05);
   const logoH = body - vh * 0.09;
   const panelW = Math.round(vw * 0.56);
-  const panel = logoPanel(logo, panelW, Math.round(logoH), { pad: 0.06 });
+  const panel = logoPanel(logo, panelW, Math.round(logoH), { pad: 0.045 });
   vg.drawImage(panel, (vw - panelW) / 2, 0);
   const vTex = new THREE.CanvasTexture(vCanvas);
   vTex.colorSpace = THREE.SRGBColorSpace;
