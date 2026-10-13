@@ -23,8 +23,10 @@ Labels: **[fact]** verified, **[inf]** inference, **[judg]** judgment call.
 | Visual Studio Community | **[fact]** No Mac version (VS for Mac was retired in 2024) | Use VS Code |
 | .NET 8/10 + ASP.NET Core hosting bundle | Something on the laptop needs it **[inf]** | Find out what. .NET itself runs on the Mac; IIS hosting doesn't. |
 | Kofax PaperPort, Greenshot, orca | Windows-only | Replace with Preview or Epson ScanSmart; ⌘⇧5; `pip install kaleido` |
-| **Always-on duties** | Daemons: QBO Live Daemon, QBO Action Server, Live Sync Poll, Rolling Runner, Update BI Listener | A MacBook sleeps when the lid closes. Keep it on power and change the Energy settings, or run `caffeinate`. This replaces "Executor keep-alive". **[judg]** Long term, these belong on an always-on box or in Cloudflare. |
+| **Always-on duties** | Daemons: QBO Live Daemon, QBO Action Server, Live Sync Poll, Rolling Runner, Update BI Listener | A MacBook sleeps when the lid closes. Keep it on power and change the Energy settings, or run `caffeinate`. **[judg]** Long term, these belong on an always-on box or in Cloudflare. |
 | "BI" | **[fact]** Power BI isn't installed. BI is your own pipeline ("Update BI Listener", "Sora BI Update Helper"). | No blocker |
+| **VBScript wrapper** | **[fact]** 26 jobs launch through `wscript.exe run_hidden.vbs <x>.bat`. VBScript and `.bat` don't exist on macOS. | Each `.bat` becomes a `.sh`. launchd already runs jobs without a window, so `run_hidden.vbs` is simply dropped. |
+| **FIA uses its own venv + git worktree** | **[fact]** `FIA\.venv\Scripts\pythonw.exe`, `FIA\worktrees\phase2` | Freeze that venv separately (§4). After the move, run `git worktree repair`, because worktree links store absolute Windows paths. |
 
 ---
 
@@ -51,45 +53,76 @@ python -m playwright install chromium
 
 **Apps with Mac versions:** Chrome, Firefox, Slack, Zoom, Google Drive, Microsoft 365, LibreOffice, VLC, OBS Studio, DB Browser for SQLite, GitHub CLI, Bambu Studio, UltiMaker Cura, Garmin Express, Chrome Remote Desktop, Brother iPrint&Scan, Epson drivers and ScanSmart, HP Smart (for the LaserJet M28-M31), PaperCut Mobility Print, Vysor, ApowerMirror, Claude desktop.
 
-**Skip:** Visual C++ redistributables, HP system tools, Apple Mobile Device Support, iTunes, QuickTime, iCloud Outlook (all built into macOS), Edge WebView2, PC Health Check, Realtek, Garmin USB drivers. "Claude" and "Cloudflare" show the publisher `Google\Chrome`, so they're Chrome web-app shortcuts **[inf]**. Just re-add them from Chrome.
+**Skip:** Visual C++ redistributables, HP system tools, Apple Mobile Device Support, iTunes, QuickTime, iCloud Outlook (all built into macOS), Edge WebView2, PC Health Check, Realtek, Garmin USB drivers. "Claude" (publisher `Google\Chrome`) is a Chrome web-app shortcut **[inf]**; the Mac has the real Claude desktop app. For "Cloudflare 1.0" (publisher Cloudflare), check what it is on the laptop: WARP, or a web-app shortcut?
 
 ---
 
-## 3. Scheduled jobs to port (Windows Task Scheduler → macOS launchd)
+## 3. What lives where (from `task-actions.csv`, 2026-10-13)
 
-**[fact]** 47 custom jobs. Vendor jobs (Apple, Epson, Firefox, HP, Zoom, SoftLanding, WarrantyChecker, PC Health) are **not** ported.
+**[fact]** Every custom job runs from one of these roots. `CV1` = `C:\Hard Drive Documents\Colvard Sausage\Operations\Succurre\Weekly Briefs\Claude v1`.
 
-- **Pipeline/BI (8):** Morning Pipeline 8:45 AM / 1 PM / 3 PM, Morning Watchdog, Rolling Runner, Update BI Listener, Sora BI Update Helper, Startup Heal
-- **QuickBooks (6):** QBO Live Daemon, QBO Action Server, Live Sync Poll, Nightly QBO load, Overnight QBO Reports, QB Email Automation
-- **Overnight checks (9):** Archive Audit, CF Bindings, D1 Budget, KV Secret Scan, Live Probe, Parity Sweep, Restore Drill, Test Metrics, Nightly Screening 3 AM
-- **Briefs and reports (5):** Daily Brief, End-of-Day Brief, Weekly Brief, Intelligence Vendor Dashboard, Vendor Invoice Export
-- **Operations (5):** Accounts Payable, TrackPod Push, LineId Snapshot, Deploy Watcher, Studio Nightly
-- **Backups and git (6):** Full Project Backup, Operational Backup, Weekly Reference Backup, Python_Daily_Backup, GitHub Push, Maintenance
-- **Other (8):** fia-collect, fia-health, fia-board-phase2, Claude Remote Control, Claude Remote Control Health, Executor keep-alive, Printer Health Monitor, Printer Health Monitor Logon
+| Root on laptop | What it is | Jobs | How they run |
+|---|---|---|---|
+| `CV1\Master Data` (+ `pipeline\`) | **BI pipeline**: briefs, morning pipeline, QBO daemons, overnight checks, deploys | 28 | 25 via `run_hidden.vbs` + `.bat`; 3 run Python directly (Full, Weekly and Operational backup) |
+| `CV1\tools` | Rolling Runner, Maintenance, Vendor Invoice Export | 3 | Python 3.14 directly |
+| `Operations\Colvard Intelligence` | **Colvard Intelligence** (`src.colvard_intelligence`): Nightly QBO load, keep-alive | 2 | `python -m` |
+| `Operations\Colvard Intelligence\pricing_studio` | **Studio** (pricing studio): Studio Nightly | 1 | `python -B tools\nightly_check.py` |
+| `Operations\Claude_Discovery` | Intelligence Vendor Dashboard | 1 | Python directly |
+| `C:\ProgramData\colvard\lineid` | LineId Snapshot | 1 | Python directly |
+| `C:\Users\frank\Desktop\Python` | Accounts Payable (`.bat`), QB Email Automation, Python_Daily_Backup | 3 | mixed |
+| `C:\Hard Drive Documents\Wrestling\Road_to_Fargo_2027` | Sora BI Update Helper (`helper_server.py`) | 1 | Python directly |
+| `C:\Hard Drive Documents\FIA` (+ `worktrees\phase2`) | fia-collect, fia-health, fia-board-phase2 | 3 | its own `.venv` |
 
-**Next step:** on the laptop, export what each job actually runs:
-```powershell
-Get-ScheduledTask | ? TaskPath -notlike '\Microsoft\*' | % { $t=$_; $t.Actions | % { [pscustomobject]@{Task=$t.TaskName; Exe=$_.Execute; Args=$_.Arguments; Dir=$_.WorkingDirectory} } } | Export-Csv task-actions.csv -NoTypeInformation
-Import-Csv task-actions.csv | ? Task -notmatch 'Firefox|HP|Epson|Zoom|SoftLanding|Warranty|Apple|S-1-5|PC Health' | Format-List | Out-String -Width 300
-```
-The output is the final list of folders, interpreters and scripts.
+**43 jobs to port.**
+- **Replaced:** Claude Remote Control and its health check, both in `Documents\WindowsPowerShell`. The Mac's Claude desktop app takes their place.
+- **Dropped:** the 2 "Printer Health Monitor" jobs (HP vendor tool), plus all the Apple/Epson/Firefox/HP/Zoom/SoftLanding/Warranty jobs.
+
+**Mac layout [judg]:** mirror the roots under your home folder so only the path prefix changes:
+`C:\Hard Drive Documents\…` → `~/Hard Drive Documents/…`, `C:\ProgramData\colvard` → `~/ProgramData/colvard`, `C:\Users\frank\Desktop\Python` → `~/Desktop/Python`.
 
 ---
 
 ## 4. Copy to the USB drive (formatted exFAT)
 
-1. Stop the jobs first: `Disable-ScheduledTask` on each one, or temporarily pause the pipeline.
-2. **Folders:** Colvard Intelligence, Studio, `Master Data`, `C:\ProgramData\colvard`, every `Dir` from `task-actions.csv`, `%USERPROFILE%\.claude` (CLAUDE.md, rulings, memory), the PowerShell profile, and the inventory files plus the `tasks\` folder.
-3. **SQLite:** `sqlite3 X.db ".backup X-copy.db"` for each database. **DuckDB:** copy each file only while nothing has it open.
-4. **Exclude:** `node_modules`, `.venv`/`venv`, `__pycache__`. They contain Windows programs and get rebuilt on the Mac.
+**Two passes [judg]:**
+- **Pass 1, now:** copy everything while jobs keep running. Good enough for code, configs and history.
+- **Pass 2, at cutover:** disable the jobs on the laptop, then re-copy only the data files (SQLite/DuckDB/JSON state).
+
+The daemons hold databases open, so a live copy of the *data* isn't trustworthy.
+
+**On the laptop (PowerShell). First check the size and freeze the FIA venv:**
+```powershell
+"{0:N1} GB" -f ((gci 'C:\Hard Drive Documents' -Recurse -File -ErrorAction SilentlyContinue | measure Length -Sum).Sum/1GB)
+& "C:\Hard Drive Documents\FIA\.venv\Scripts\python.exe" -m pip freeze > pip-fia.txt
+```
+
+**Pass 1** (replace `E:` with the USB drive's letter):
+```powershell
+$x = '/XD','.venv','venv','node_modules','__pycache__','/R:1','/W:1','/NFL','/NDL'
+robocopy "C:\Hard Drive Documents" "E:\migrate\Hard Drive Documents" /E @x /LOG:E:\migrate\log-hdd.txt
+robocopy "C:\ProgramData\colvard" "E:\migrate\ProgramData\colvard" /E @x
+robocopy "C:\Users\frank\Desktop\Python" "E:\migrate\Desktop\Python" /E @x
+robocopy "C:\Users\frank\.claude" "E:\migrate\dot-claude" /E @x
+robocopy "C:\Users\frank\Documents\WindowsPowerShell" "E:\migrate\WindowsPowerShell" /E @x
+robocopy "C:\Users\frank" "E:\migrate\inventory" apps.csv pip.txt pip-fia.txt npm.txt runtimes.txt task-actions.csv
+robocopy "C:\Users\frank\tasks" "E:\migrate\inventory\tasks" /E
+```
+- `robocopy` handles paths longer than 260 characters, which Explorer copy doesn't. Exit codes 0–7 mean success.
+- Keep `.git` folders; they carry the history.
+- `.venv`, `node_modules` and `__pycache__` hold Windows programs and get rebuilt on the Mac.
+- **Secrets:** `.env` files, token JSONs and `.claude` credentials go onto the USB drive. Keep the drive physically with you and wipe it once you've confirmed the Mac copy.
+
+**On the Mac:** drag `E:\migrate\*` into your home folder. `Hard Drive Documents` should end up at `~/Hard Drive Documents`.
 
 ---
 
 ## 5. Porting work on the Mac (Claude Code can do this locally)
 
 - `C:\…` paths and backslashes → Mac paths, preferably moved into one config file
-- `.bat` / `.ps1` / `.cmd` wrappers → shell scripts with Unix (LF) line endings
+- `.bat` / `.ps1` / `.cmd` wrappers → shell scripts with Unix (LF) line endings. Quote every path, because `Hard Drive Documents` contains spaces.
+- `C:\…` prefixes → find them all with `grep -rIliE 'c:(\\|/)' ~/Hard\ Drive\ Documents --include='*.py' --include='*.bat' --include='*.json' --include='*.toml'`
 - Task Scheduler XML → `launchd` plists in `~/Library/LaunchAgents`
 - `powercfg` / keep-awake → `caffeinate` or the Energy settings
+- FIA: rebuild `.venv` from `pip-fia.txt`, then run `git worktree repair` in `~/Hard Drive Documents/FIA`
 - `win32com` / `comtypes` code → rewrite (for example, Outlook automation becomes Gmail/SMTP via `yagmail`)
 - Port one job group at a time. Disable it on Windows, enable it on the Mac, and watch one full cycle before moving on.
