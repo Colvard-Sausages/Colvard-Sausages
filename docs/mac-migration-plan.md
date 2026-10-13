@@ -7,7 +7,7 @@ Labels: **[fact]** verified, **[inf]** inference, **[judg]** judgment call.
 
 ## 0. Ground rules
 
-- **Do not wipe the laptop** until the Mac has run every job cleanly for ~2 weeks. Some of this code exists only there. **[fact]** None of it is on GitHub.
+- **Do not wipe the laptop** until the Mac has run every job cleanly for ~2 weeks. Some of this code may exist only there. **[fact]** None of it is in `Colvard-Sausages/Colvard-Sausages`, the only repo this session can see. **[inf]** The *Colvard GitHub Push* job (`github_push_master.bat`) suggests another repo holds at least part of it. Check with `git remote -v`.
 - **Never run the same job on both machines.** For each job, disable it on Windows (`Disable-ScheduledTask -TaskName "<name>"`), then enable it on the Mac. Running both would mean double deploys, double QBO actions, double TrackPod pushes and double emails.
 - **Credentials:** move them on the USB drive only, never through a cloud drive. Wipe the USB afterwards. Prefer logging in again on the Mac (`npx wrangler login`, `gh auth login`, `gcloud auth login`, Google OAuth).
 
