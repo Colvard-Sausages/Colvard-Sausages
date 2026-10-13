@@ -96,10 +96,14 @@ The daemons hold databases open, so a live copy of the *data* isn't trustworthy.
 & "C:\Hard Drive Documents\FIA\.venv\Scripts\python.exe" -m pip freeze > pip-fia.txt
 ```
 
+**Scope (decided 2026-10-13):** from `Hard Drive Documents`, only `Colvard Sausage` (47.4 GB) and `FIA` (5.7 GB, smaller without `.venv`). The 4 folders outside it are still required, because jobs run from them. `Wrestling` (27.1 GB), `UMA` (6.1 GB) and the personal folders stay on the laptop. **Archive them to an external drive or cloud storage before the laptop is wiped.** Excluding `Wrestling` retires the *Sora BI Update Helper* job (`Road_to_Fargo_2027`, 0.2 GB).
+
 **Pass 1** (replace `E:` with the USB drive's letter):
 ```powershell
+New-Item -ItemType Directory -Force E:\migrate | Out-Null   # robocopy won't create the log file's folder
 $x = '/XD','.venv','venv','node_modules','__pycache__','/R:1','/W:1','/NFL','/NDL'
-robocopy "C:\Hard Drive Documents" "E:\migrate\Hard Drive Documents" /E @x /LOG:E:\migrate\log-hdd.txt
+robocopy "C:\Hard Drive Documents\Colvard Sausage" "E:\migrate\Hard Drive Documents\Colvard Sausage" /E @x /LOG:E:\migrate\log-colvard.txt
+robocopy "C:\Hard Drive Documents\FIA" "E:\migrate\Hard Drive Documents\FIA" /E @x /LOG:E:\migrate\log-fia.txt
 robocopy "C:\ProgramData\colvard" "E:\migrate\ProgramData\colvard" /E @x
 robocopy "C:\Users\frank\Desktop\Python" "E:\migrate\Desktop\Python" /E @x
 robocopy "C:\Users\frank\.claude" "E:\migrate\dot-claude" /E @x
