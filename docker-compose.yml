@@ -1,0 +1,42 @@
+# Two services sharing one master.db:
+#   web  — serves the invoices page + API on :8765
+#   sync — pulls invoices from QuickBooks every 60s
+#
+# Usage:
+#   cp .env.example .env     # fill in your QuickBooks values
+#   docker compose up -d     # both services start
+#   # first time only, seed the database:
+#   docker compose run --rm sync python3 -m api.sync.cli backfill --since 2026-01-01
+#
+# The ./data directory holds master.db and the rotating QBO token file.
+# Put ./data on the same disk as your real master.db, or point COLVARD_DB_PATH
+# at it, to wire into the live dashboards.
+
+services:
+  web:
+    build: .
+    ports:
+      - "8765:8765"
+    env_file: .env
+    environment:
+      COLVARD_DB_PATH: /data/master.db
+      QBO_TOKEN_FILE: /data/.qbo_tokens.json
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+  sync:
+    build: .
+    env_file: .env
+    environment:
+      COLVARD_DB_PATH: /data/master.db
+      QBO_TOKEN_FILE: /data/.qbo_tokens.json
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    # Incremental pull every 60s. The first backfill is a one-off (see header).
+    command: >
+      sh -c "while true; do
+               python3 -m api.sync.cli cdc || echo 'sync iteration failed';
+               sleep 60;
+             done"

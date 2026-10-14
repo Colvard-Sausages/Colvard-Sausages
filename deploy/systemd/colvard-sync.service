@@ -1,0 +1,19 @@
+# Incremental QuickBooks invoice sync (one shot; the timer repeats it).
+# Install:
+#   sudo cp deploy/systemd/colvard-sync.* /etc/systemd/system/
+#   sudo mkdir -p /etc/colvard && sudo cp .env /etc/colvard/qbo.env
+#   sudo systemctl enable --now colvard-sync.timer
+[Unit]
+Description=Colvard QBO invoice sync (incremental)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/colvard/qbo.env
+WorkingDirectory=/opt/Colvard-Sausages
+ExecStart=/usr/bin/python3 -m api.sync.cli cdc
+# Read-only against QuickBooks is enforced in code; this is defense in depth.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/Colvard-Sausages

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sales · Invoices — This Week & Next Week</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #fafafa; --panel: #ffffff; --ink: #1a1a1a; --mute: #6b7280;
+    --line: #e5e7eb; --accent: #0f766e; --accent-soft: #ccfbf1;
+    --warn: #f59e0b; --bad: #dc2626; --good: #059669;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, sans-serif;
+         background: var(--bg); color: var(--ink); }
+  header { display: flex; align-items: baseline; justify-content: space-between;
+           gap: 1rem; padding: 1rem 1.25rem; background: var(--panel);
+           border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; }
+  header h1 { font-size: 1.05rem; margin: 0; font-weight: 600;
+              letter-spacing: -.01em; }
+  header h1 .crumb { color: var(--mute); font-weight: 400; }
+  .sync-pill { font-size: .8rem; color: var(--mute); display: flex; gap: .5rem; align-items: center; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transition: background .2s; }
+  .sync-dot.stale { background: var(--warn); }
+  .sync-dot.dead { background: var(--bad); }
+  .sync-dot.pulse { animation: pulse 1s ease-out 1; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(5,150,105,.45); }
+    100% { box-shadow: 0 0 0 10px rgba(5,150,105,0); }
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 1rem 1.25rem 4rem; }
+  .controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+              padding: .75rem 1rem; background: var(--panel);
+              border: 1px solid var(--line); border-radius: 8px; margin-bottom: 1rem; }
+  .controls label { font-size: .85rem; color: var(--mute);
+                    display: inline-flex; align-items: center; gap: .35rem; }
+  .week-section { margin-top: 1.25rem; }
+  .week-head { display: flex; align-items: baseline; justify-content: space-between;
+               padding: .5rem 1rem; background: var(--accent-soft);
+               border-radius: 8px 8px 0 0; }
+  .week-head h2 { font-size: .95rem; margin: 0; font-weight: 600; }
+  .week-head .meta { font-size: .85rem; color: var(--mute); }
+  .week-body { background: var(--panel); border: 1px solid var(--line);
+               border-top: none; border-radius: 0 0 8px 8px; }
+  details.inv { border-top: 1px solid var(--line); }
+  details.inv:first-child { border-top: none; }
+  details.inv > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) 1fr 1fr 1fr 1fr 88px 16px;
+    gap: .75rem; align-items: center; padding: .55rem 1rem; cursor: pointer;
+    list-style: none;
+  }
+  details.inv > summary::-webkit-details-marker { display: none; }
+  details.inv > summary::after { content: "▸"; color: var(--mute); transition: transform .15s; }
+  details.inv[open] > summary::after { transform: rotate(90deg); }
+  .col-cust { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .col-doc, .col-date, .col-amt { color: var(--mute); font-variant-numeric: tabular-nums; }
+  .col-amt { text-align: right; color: var(--ink); }
+  .col-bal { text-align: right; font-variant-numeric: tabular-nums; }
+  .col-bal.zero { color: var(--good); }
+  .col-bal.partial { color: var(--warn); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px;
+           font-size: .72rem; font-weight: 600; letter-spacing: .02em;
+           background: #e5e7eb; color: #374151; text-align: center; }
+  .badge.OPEN { background: #e0e7ff; color: #3730a3; }
+  .badge.SENT { background: #fef3c7; color: #92400e; }
+  .badge.VIEWED { background: #fce7f3; color: #9d174d; }
+  .badge.PARTIAL { background: #fed7aa; color: #9a3412; }
+  .badge.PAID { background: #d1fae5; color: #065f46; }
+  .badge.OVERDUE { background: #fee2e2; color: #991b1b; }
+  .badge.VOIDED { background: #e5e7eb; color: #6b7280; text-decoration: line-through; }
+  .lines { padding: .5rem 1rem .75rem 2.25rem; background: #fafbfc;
+           border-top: 1px dashed var(--line); }
+  .lines table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .lines th, .lines td { text-align: left; padding: .25rem .5rem; }
+  .lines th { color: var(--mute); font-weight: 500; }
+  .lines td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty { padding: 1rem; color: var(--mute); text-align: center; font-style: italic; }
+  .err { padding: 1rem; color: var(--bad); }
+  footer { text-align: center; color: var(--mute); font-size: .78rem;
+           padding: 2rem 0 1rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="crumb">Sales ·</span> Invoices — This Week &amp; Next Week</h1>
+  <div class="sync-pill">
+    <span id="sync-text">connecting…</span>
+    <span id="sync-dot" class="sync-dot"></span>
+  </div>
+</header>
+
+<main>
+  <div class="controls">
+    <label><input type="checkbox" id="show-paid"> Show paid</label>
+    <label>
+      Bucket by
+      <select id="bucket-by">
+        <option value="txn_date" selected>Invoice date</option>
+        <option value="due_date">Due date</option>
+        <option value="ship_date">Ship date</option>
+      </select>
+    </label>
+    <span style="flex:1"></span>
+    <span id="totals" style="font-size:.85rem;color:var(--mute)"></span>
+  </div>
+
+  <div id="weeks"></div>
+</main>
+
+<footer>Polls /api/invoices every 30s. Source: QuickBooks Online via master.db.</footer>
+
+<script>
+  const POLL_MS = 30_000;
+  const STALE_MS = 90_000;
+
+  const fmt$ = n => (n == null) ? "" : n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const fmtDate = s => s ? new Date(s + "T00:00:00").toLocaleDateString("en-US",
+    { month: "short", day: "numeric" }) : "";
+  const escHtml = s => (s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+
+  let lastUpdatedUtc = null;
+  let lineCache = new Map();   // key: realm_id/qbo_id → lines payload
+  let inFlightLines = new Set();
+
+  async function fetchInvoices() {
+    const showPaid = document.getElementById("show-paid").checked;
+    const bucketBy = document.getElementById("bucket-by").value;
+    const url = `/api/invoices?week=both&bucket_by=${bucketBy}&include_paid=${showPaid}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+
+  async function fetchLines(realm, qbo) {
+    const key = `${realm}/${qbo}`;
+    if (lineCache.has(key)) return lineCache.get(key);
+    if (inFlightLines.has(key)) return null;
+    inFlightLines.add(key);
+    try {
+      const r = await fetch(`/api/invoices/${realm}/${qbo}/lines`, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      lineCache.set(key, data);
+      return data;
+    } finally {
+      inFlightLines.delete(key);
+    }
+  }
+
+  function renderLines(container, payload) {
+    if (!payload || !payload.lines.length) {
+      container.innerHTML = '<div class="empty">No line items.</div>';
+      return;
+    }
+    const rows = payload.lines.map(l => `
+      <tr>
+        <td>${escHtml(l.item_name || l.description || l.detail_type)}</td>
+        <td class="num">${l.quantity ?? ""}</td>
+        <td class="num">${fmt$(l.unit_price)}</td>
+        <td class="num">${fmt$(l.amount)}</td>
+        <td>${escHtml(l.class_name || "")}</td>
+      </tr>`).join("");
+    container.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Item / description</th><th class="num">Qty</th>
+          <th class="num">Unit</th><th class="num">Amount</th><th>Class</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function attachLazyLoad(detailsEl, realm, qbo) {
+    detailsEl.addEventListener("toggle", async () => {
+      if (!detailsEl.open) return;
+      const slot = detailsEl.querySelector(".lines");
+      if (slot.dataset.loaded === "true") return;
+      slot.innerHTML = '<div class="empty">Loading…</div>';
+      try {
+        const payload = await fetchLines(realm, qbo);
+        renderLines(slot, payload);
+        slot.dataset.loaded = "true";
+      } catch (e) {
+        slot.innerHTML = `<div class="err">Failed to load lines: ${escHtml(e.message)}</div>`;
+      }
+    }, { once: false });
+  }
+
+  function renderWeeks(data) {
+    const wrap = document.getElementById("weeks");
+    const dataChanged = data.weeks.some(w => w.invoices.some(i => i.updated_utc !== lastUpdatedUtc));
+    wrap.innerHTML = "";
+
+    let grandCount = 0, grandTotal = 0, grandBalance = 0;
+
+    for (const w of data.weeks) {
+      grandCount += w.count;
+      grandTotal += w.total || 0;
+      grandBalance += w.balance || 0;
+
+      const section = document.createElement("section");
+      section.className = "week-section";
+      section.innerHTML = `
+        <div class="week-head">
+          <h2>${w.label === "this" ? "This week" : "Next week"}
+            <span style="color:var(--mute);font-weight:400">
+              · ${fmtDate(w.start)} – ${fmtDate(w.end)}
+            </span>
+          </h2>
+          <div class="meta">${w.count} invoice${w.count === 1 ? "" : "s"}
+            · ${fmt$(w.total)} total · ${fmt$(w.balance)} open</div>
+        </div>
+        <div class="week-body"></div>`;
+      const body = section.querySelector(".week-body");
+
+      if (!w.invoices.length) {
+        body.innerHTML = '<div class="empty">No invoices in this window.</div>';
+      } else {
+        for (const inv of w.invoices) {
+          const d = document.createElement("details");
+          d.className = "inv";
+          const isPartial = inv.balance > 0 && inv.balance < inv.total;
+          d.innerHTML = `
+            <summary>
+              <span class="col-cust">${escHtml(inv.customer_name)}</span>
+              <span class="col-doc">${escHtml(inv.doc_number || "—")}</span>
+              <span class="col-date">${fmtDate(inv.txn_date)}</span>
+              <span class="col-amt">${fmt$(inv.total)}</span>
+              <span class="col-bal ${inv.balance === 0 ? "zero" : isPartial ? "partial" : ""}">${fmt$(inv.balance)}</span>
+              <span class="badge ${inv.status}">${inv.status}</span>
+            </summary>
+            <div class="lines" data-loaded="false"></div>`;
+          attachLazyLoad(d, inv.realm_id, inv.qbo_id);
+          body.appendChild(d);
+        }
+      }
+      wrap.appendChild(section);
+    }
+
+    document.getElementById("totals").textContent =
+      `${grandCount} invoice${grandCount === 1 ? "" : "s"} · ${fmt$(grandTotal)} total · ${fmt$(grandBalance)} open`;
+
+    if (dataChanged) lineCache.clear();
+    lastUpdatedUtc = data.generated_utc;
+  }
+
+  function setSyncStatus(state, text) {
+    const dot = document.getElementById("sync-dot");
+    dot.className = `sync-dot ${state}`;
+    if (state === "ok") dot.classList.add("pulse");
+    document.getElementById("sync-text").textContent = text;
+  }
+
+  let lastFetchMs = 0;
+  async function poll() {
+    try {
+      const data = await fetchInvoices();
+      lastFetchMs = Date.now();
+      const generated = new Date(data.generated_utc);
+      setSyncStatus("ok", `Updated ${generated.toLocaleTimeString()}`);
+      renderWeeks(data);
+    } catch (e) {
+      const age = Date.now() - lastFetchMs;
+      setSyncStatus(age > STALE_MS ? "dead" : "stale", `Last update failed: ${e.message}`);
+    }
+  }
+
+  document.getElementById("show-paid").addEventListener("change", poll);
+  document.getElementById("bucket-by").addEventListener("change", poll);
+
+  poll();
+  setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>
