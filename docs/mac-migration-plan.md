@@ -38,6 +38,8 @@ Labels: **[fact]** verified, **[inf]** inference, **[judg]** judgment call.
 
 ## 2. Install on the Mac
 
+**Automated:** `bash deploy/mac/bootstrap.sh` does everything in this section except the GUI apps, and checks the result. **[fact]** Every one of the 244 pinned packages has a Mac arm64 / Python 3.14 wheel, or (`ttkwidgets`) is pure Python. All 11 Homebrew formulas have Apple Silicon builds. Porting instructions for Claude Code on the Mac: `docs/mac-port-handoff.md`.
+
 **Runtimes**
 - Python **3.14.8** from python.org. 3.15 is already installed.
 - Node.js **24 LTS** from nodejs.org. It matches the laptop's 24.15.0. No global npm packages to move.
