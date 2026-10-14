@@ -93,4 +93,60 @@ STEPS
 
    Stop there.
 
-**Scope note:** this covers the BI repo only. Colvard Intelligence, Claude_Discovery and FIA aren't on GitHub yet, so they can't be freshly cloned until the laptop pushes them (plan §4).
+---
+
+## PART B: Colvard Intelligence (includes Pricing Studio), FIA, Claude_Discovery
+
+Same HARD RULES. Do this after Part A. These three repos aren't on GitHub yet, so make **local clones from the SMB copy**. Cloning only reads the source repo, and you get clean Mac line endings. Once the laptop pushes them, point `origin` at GitHub.
+
+| Repo | Copied source (data only) | Clean working copy | Laptop jobs it runs |
+|---|---|---|---|
+| Colvard Intelligence | `~/Hard Drive Documents/Colvard Sausage/Operations/Colvard Intelligence` | `~/Colvard/Intelligence` | Nightly QBO load (`-m src.colvard_intelligence.core nightly --wait`), Executor keep-alive (`-m src.colvard_intelligence.ops.keepalive tick`) |
+| ↳ **Pricing Studio** | the same repo, subfolder `pricing_studio` | `~/Colvard/Intelligence/pricing_studio` | Studio Nightly (`python -B tools/nightly_check.py`, run from `pricing_studio`) |
+| FIA | `~/Hard Drive Documents/FIA` (+ worktree `worktrees/phase2`, branch `phase2`) | `~/Colvard/FIA` + `~/Colvard/FIA-phase2` | fia-collect, fia-health (`-m fia.run collect/health`); fia-board-phase2 (collect → health → publish, run from the phase2 worktree) |
+| Claude_Discovery | `~/Hard Drive Documents/Colvard Sausage/Operations/Claude_Discovery` | `~/Colvard/Discovery` | Intelligence Vendor Dashboard (`pipeline/vl_refresh_v1.py`) |
+
+B1. **Clone locally.** Don't hardlink, so nothing is shared with the copy:
+```bash
+S=~/"Hard Drive Documents"
+git clone --no-hardlinks "$S/Colvard Sausage/Operations/Colvard Intelligence" ~/Colvard/Intelligence
+git clone --no-hardlinks "$S/FIA" ~/Colvard/FIA
+git -C ~/Colvard/FIA worktree add ../FIA-phase2 phase2
+git clone --no-hardlinks "$S/Colvard Sausage/Operations/Claude_Discovery" ~/Colvard/Discovery
+```
+- Set `user.name`/`user.email` in each, as in step 3.
+- **Don't add a GitHub remote and don't push.** Colvard Intelligence still has an unresolved secret-scan hit (commit `94a165d`).
+
+B2. **Drift check** (read-only, the same commands as 3b) on each copied source. The laptop showed uncommitted files: Intelligence 4, Discovery 202, FIA 1. List the modified tracked files, and compare each repo's `master`/`main` hash in the copy with the clone's. Report; don't fix.
+
+B3. **Runtime files git doesn't carry.** In each copied source, list the untracked and ignored files without writing to them:
+```bash
+GIT_OPTIONAL_LOCKS=0 git -C "<copied source>" -c core.autocrlf=true status --short --ignored | grep -E '^(\?\?|!!)'
+```
+- Group the results by top-level folder, with sizes (`du -sh`).
+- **Ask Frank before copying any of it** into the clones.
+- Never copy `.env`, `*token*`, `*secret*` or `*credential*` files, or `.venv/`.
+- Claude_Discovery's `staging/` is about 17 GB, and `vl_refresh_v1.py` mentions it. Report its size and the free disk space; don't copy it without Frank's OK.
+
+B4. **Python.**
+- Colvard Intelligence and Claude_Discovery: install their `requirements.txt` or `pyproject.toml`, if present, into `~/Colvard/venv`, and report any conflicts.
+- FIA: give it its own venv, because it had one on the laptop. Run `python3.14 -m venv ~/Colvard/venv-fia`, then install from `~/inventory/pip-fia.txt` minus pywin32, pywin32-ctypes, comtypes, pywinpty and win_unicode_console. If `pip-fia.txt` is missing from `~/inventory`, report it.
+
+B5. **Read-only checks.** Import only, run nothing. Read each module first, applying the step 8 rule:
+```bash
+cd ~/Colvard/Intelligence && ~/Colvard/venv/bin/python -c "import src.colvard_intelligence; print('CI import OK')"
+cd ~/Colvard/Intelligence/pricing_studio && ~/Colvard/venv/bin/python -c "import ast,sys; ast.parse(open('tools/nightly_check.py').read()); print('studio parses OK')"
+cd ~/Colvard/FIA && ~/Colvard/venv-fia/bin/python -c "import fia; print('FIA import OK')"
+```
+- **Do NOT run** `core nightly` (it pulls from QuickBooks), `keepalive tick`, `fia.run`, `nightly_check.py` or `vl_refresh_v1.py`.
+- If a repo has a test suite that is clearly offline (tmp files only, no network), you may run it with `-q`; otherwise list it.
+
+B6. **Windows-only code.** In all three clones, list files that use `win32com|pythoncom|comtypes|winreg|msvcrt|os\.startfile|C:\\|C:/`, with counts. Report only.
+
+B7. **Append to `~/Colvard/mac_prep_report.md`:**
+- for each repo: the clone path, the drift check, a runtime-file inventory with sizes, venv/package status, the B5 results and the Windows-only code counts
+- the FIA worktree status
+
+**Not covered by Part A or Part B (still to do):**
+- the `~/Desktop/Python` jobs: QB Email Automation (probably Outlook via `win32com`, so it needs a rewrite), Accounts Payable (`.bat`) and Python_Daily_Backup
+- LineId Snapshot (`~/ProgramData/colvard/lineid`)
