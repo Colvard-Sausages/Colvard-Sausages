@@ -55,9 +55,11 @@ Don't copy the token files instead.
 - Draft one plist template.
 - **Caveat:** the laptop copy has **512 uncommitted files** that GitHub doesn't, so check every finding again against the real copy before applying it. Commit and push the report, which must contain no secrets.
 
-**0e. Transfer route.** Two routes were offered: a USB drive, or a direct network copy into `~` (Mac File Sharing → Options → Windows File Sharing for `frankbukoski`). Confirm which one Frank is using.
-- For the network route, report `ipconfig getifaddr en0` and `df -h ~ | tail -1`. At least 80 GB must be free.
-- Turn File Sharing off after the copy.
+**0e. Prepare the Mac to receive the copy. There is no USB drive (decided by Frank).** The laptop copies straight into `~` over the network (plan §4):
+- Report `df -h ~ | tail -1` (at least 80 GB must be free) and `ipconfig getifaddr en0`.
+- Have Frank turn on File Sharing → Options → **Windows File Sharing** for `frankbukoski`.
+- Run `caffeinate -dims &` during the copy.
+- Turn File Sharing off once the copy is done.
 
 ## Step 1: Preconditions
 

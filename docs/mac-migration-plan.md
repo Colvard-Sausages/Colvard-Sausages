@@ -15,7 +15,7 @@ Labels: **[fact]** verified, **[inf]** inference, **[judg]** judgment call.
   | `Claude_Discovery` | **none** | 202 | 1 |
   | `FIA` | **none** | 1 | 1 (`phase2`) |
 - **Never run the same job on both machines.** For each job, disable it on Windows (`Disable-ScheduledTask -TaskName "<name>"`), then enable it on the Mac. Running both would mean double deploys, double QBO actions, double TrackPod pushes and double emails.
-- **Credentials:** move them on the USB drive only, never through a cloud drive. Wipe the USB afterwards. Prefer logging in again on the Mac (`npx wrangler login`, `gh auth login`, `gcloud auth login`, Google OAuth).
+- **Credentials:** they travel only inside the direct laptop→Mac network copy (§4), never through a cloud drive. Prefer logging in again on the Mac (`npx wrangler login`, `gh auth login`, `gcloud auth login`, Google OAuth).
 
 ---
 
@@ -90,7 +90,9 @@ python -m playwright install chromium
 
 ---
 
-## 4. Copy to the USB drive (formatted exFAT)
+## 4. Copy laptop → Mac over the home network (no USB drive)
+
+**[decided 2026-10-14] There is no USB drive.** The laptop copies straight into the Mac's home folder over the local network, using Mac File Sharing (SMB).
 
 **Before Pass 1, push the three repos that have no remote to new *private* GitHub repos [judg].** This gives you an off-machine backup, which you don't have today. First check what's in their history, because pushing publishes it to GitHub. In PowerShell, inside each repo:
 ```powershell
@@ -112,7 +114,7 @@ Names: `colvard-intelligence`, `colvard-claude-discovery`, `fia`. **[judg]** If 
    - Repo **Settings → Secrets and variables**.
    - Any deploy keys.
 
-Uncommitted files and worktrees travel with the folder copy either way; don't bulk-commit 512 unknown files just to move them. Uncommitted files and worktrees travel with the folder copy either way; don't bulk-commit 512 unknown files just to move them.
+Uncommitted files and worktrees travel with the folder copy either way; don't bulk-commit 512 unknown files just to move them.
 
 **Two passes [judg]:**
 - **Pass 1, now:** copy everything while jobs keep running. Good enough for code, configs and history.
@@ -128,25 +130,34 @@ The daemons hold databases open, so a live copy of the *data* isn't trustworthy.
 
 **Scope (decided 2026-10-13):** from `Hard Drive Documents`, only `Colvard Sausage` (47.4 GB) and `FIA` (5.7 GB, smaller without `.venv`). The 4 folders outside it are still required, because jobs run from them. `Wrestling` (27.1 GB), `UMA` (6.1 GB) and the personal folders stay on the laptop. **Archive them to an external drive or cloud storage before the laptop is wiped.** Excluding `Wrestling` retires the *Sora BI Update Helper* job (`Road_to_Fargo_2027`, 0.2 GB).
 
-**Pass 1** (replace `E:` with the USB drive's letter):
-```powershell
-New-Item -ItemType Directory -Force E:\migrate | Out-Null   # robocopy won't create the log file's folder
-$x = '/XD','.venv','venv','node_modules','__pycache__','/R:1','/W:1','/NFL','/NDL'
-robocopy "C:\Hard Drive Documents\Colvard Sausage" "E:\migrate\Hard Drive Documents\Colvard Sausage" /E @x /LOG:E:\migrate\log-colvard.txt
-robocopy "C:\Hard Drive Documents\FIA" "E:\migrate\Hard Drive Documents\FIA" /E @x /LOG:E:\migrate\log-fia.txt
-robocopy "C:\ProgramData\colvard" "E:\migrate\ProgramData\colvard" /E @x
-robocopy "C:\Users\frank\Desktop\Python" "E:\migrate\Desktop\Python" /E @x
-robocopy "C:\Users\frank\.claude" "E:\migrate\dot-claude" /E @x
-robocopy "C:\Users\frank\Documents\WindowsPowerShell" "E:\migrate\WindowsPowerShell" /E @x
-robocopy "C:\Users\frank" "E:\migrate\inventory" apps.csv pip.txt pip-fia.txt npm.txt runtimes.txt task-actions.csv
-robocopy "C:\Users\frank\tasks" "E:\migrate\inventory\tasks" /E
+**Mac first (Terminal):**
+```bash
+df -h ~ | tail -1            # "Avail" must be ≥ 80G. Stop if not.
+ipconfig getifaddr en0       # the Mac's IP, for the laptop
+caffeinate -dims &           # keep the Mac awake during the copy
 ```
-- `robocopy` handles paths longer than 260 characters, which Explorer copy doesn't. Exit codes 0–7 mean success.
-- Keep `.git` folders; they carry the history.
-- `.venv`, `node_modules` and `__pycache__` hold Windows programs and get rebuilt on the Mac.
-- **Secrets:** `.env` files, token JSONs and `.claude` credentials go onto the USB drive. Keep the drive physically with you and wipe it once you've confirmed the Mac copy.
+Then go to System Settings → General → Sharing → **File Sharing: on** → ⓘ → **Options** → under *Windows File Sharing*, tick `frankbukoski` and enter the Mac password.
 
-**On the Mac:** drag `E:\migrate\*` into your home folder. `Hard Drive Documents` should end up at `~/Hard Drive Documents`.
+**Pass 1, laptop (PowerShell).** Replace `<IP>`. `net use` asks for the **Mac** password.
+```powershell
+net use M: \\<IP>\frankbukoski /user:frankbukoski
+$x = '/XD','.venv','venv','node_modules','__pycache__','/R:1','/W:1','/NFL','/NDL','/NP','/MT:8'
+robocopy "C:\Hard Drive Documents\Colvard Sausage" "M:\Hard Drive Documents\Colvard Sausage" /E @x /LOG:M:\copy-colvard.txt
+robocopy "C:\Hard Drive Documents\FIA" "M:\Hard Drive Documents\FIA" /E @x /LOG:M:\copy-fia.txt
+robocopy "C:\ProgramData\colvard" "M:\ProgramData\colvard" /E @x
+robocopy "C:\Users\frank\Desktop\Python" "M:\Desktop\Python" /E @x
+robocopy "C:\Users\frank\.claude" "M:\dot-claude" /E @x
+robocopy "C:\Users\frank\Documents\WindowsPowerShell" "M:\WindowsPowerShell" /E @x
+robocopy "C:\Users\frank" "M:\inventory" apps.csv pip.txt pip-fia.txt npm.txt runtimes.txt task-actions.csv
+robocopy "C:\Users\frank\tasks" "M:\inventory\tasks" /E
+```
+- Everything lands directly where the handoff expects it: `~/Hard Drive Documents`, `~/ProgramData/colvard`, `~/Desktop/Python`, `~/dot-claude`, `~/inventory`. There's nothing to drag afterwards.
+- `robocopy` handles paths longer than 260 characters. Exit codes 0–7 mean success; 8 or higher means failure (check the log in `~/copy-*.txt`).
+- About 53 GB, roughly 30–90 minutes over Wi-Fi **[inf]**. Ethernet is faster.
+- Keep the `.git` folders. `.venv`, `node_modules` and `__pycache__` are Windows builds that get rebuilt on the Mac.
+- **Secrets** (`.env`, token JSONs, `.claude` credentials) travel only over this direct LAN copy.
+- **Afterwards:** on the laptop, run `net use M: /delete`. On the Mac, turn File Sharing off, then end `caffeinate` with `kill %1` or by closing that Terminal tab.
+- **Pass 2 at cutover** uses the same `net use` + `robocopy`, limited to that group's data files.
 
 ---
 
