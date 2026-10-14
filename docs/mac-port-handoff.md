@@ -12,7 +12,7 @@ The full background is in `docs/mac-migration-plan.md`.
 | Pushing Colvard Intelligence, Claude_Discovery and FIA to private GitHub repos | **Not done** (`gh` wasn't logged in on the laptop) |
 | Target GitHub owner for all code | `Colvard-Sausages`. The BI repo is to be **transferred** from `MyLiege-FJB` (plan §4). Not done |
 | Copying the folders to the Mac (plan §4, Pass 1) | **Not done** |
-| Mac tools (`deploy/mac/bootstrap.sh`) | Run it first |
+| Mac tools (`deploy/mac/bootstrap.sh`) | **Done**: all checks passed, venv `~/colvard-venv` (2026-10-14) |
 
 ## Rules (non-negotiable)
 
@@ -20,6 +20,44 @@ The full background is in `docs/mac-migration-plan.md`.
 2. **Don't manually run jobs with outside effects** (email, TrackPod, deploy, QBO Action Server, GitHub push) while Windows still runs them. Use a dry-run flag if the job has one. Otherwise ask first.
 3. **Secrets** (`.env`, `*token*.json`, Claude credentials): never print, never commit, never copy anywhere else.
 4. Keep the original `.bat` files next to the new `.sh` files for reference until cutover is done.
+
+## Step 0: Work that doesn't need the laptop's files (do this while the copy is pending)
+
+Each item is independent. **Ask Frank before each one**, because they change his Mac.
+
+**0a. Apps.** These Homebrew cask names were verified 2026-10-14:
+```bash
+brew install --cask google-chrome firefox slack zoom libreoffice db-browser-for-sqlite \
+  visual-studio-code google-drive vlc obs bambu-studio ultimaker-cura garmin-express \
+  chrome-remote-desktop-host gcloud-cli
+```
+- **Microsoft 365:** install from office.com with Frank's account. The `microsoft-office` cask also exists, but it's large.
+- **Printers:** try plain macOS printing (AirPrint) first. Use the Brother, Epson or HP driver downloads only if a printer isn't found. None of them has a cask.
+
+**0b. Always-on settings.** The pipeline has daemons, so the Mac must not sleep on power:
+- System Settings → Battery → Options → **Prevent automatic sleeping on power adapter when the display is off**: on.
+- Or run `sudo pmset -c sleep 0 disksleep 0`. Check with `pmset -g`.
+- **Decision for Frank:** FileVault is on. After any reboot, LaunchAgents don't run until he logs in, because the data volume stays locked. For planned restarts, use `sudo fdesetup authrestart`. After an unplanned one (power cut, crash), the pipeline stays down until someone logs in. The recommendation is to accept this and keep FileVault.
+
+**0c. Logins that don't depend on laptop files:**
+- `npx wrangler login` (Cloudflare)
+- `gcloud auth login` (only if the pipeline uses Google Cloud)
+
+Don't copy the token files instead.
+
+**0d. Porting analysis from GitHub (read-only).** Only the BI repo is on GitHub so far.
+- Clone it to a scratch location, **not** the final path, so it can't collide with the incoming copy: `git clone https://github.com/MyLiege-FJB/colvard-bi-system.git ~/scratch/colvard-bi-system`. If the BI repo has already been transferred, use the `Colvard-Sausages` URL.
+- Then do Step 3 there, and read every `Master Data/*.bat` called by the 25 BI jobs (Step 4 table).
+- Produce `~/Colvard-Sausages/docs/mac-port-report.md`. For each job, give:
+  - the full command chain (vbs → bat → python)
+  - its Windows-only parts
+  - the proposed `.sh`
+- Draft one plist template.
+- **Caveat:** the laptop copy has **512 uncommitted files** that GitHub doesn't, so check every finding again against the real copy before applying it. Commit and push the report, which must contain no secrets.
+
+**0e. Transfer route.** Two routes were offered: a USB drive, or a direct network copy into `~` (Mac File Sharing → Options → Windows File Sharing for `frankbukoski`). Confirm which one Frank is using.
+- For the network route, report `ipconfig getifaddr en0` and `df -h ~ | tail -1`. At least 80 GB must be free.
+- Turn File Sharing off after the copy.
 
 ## Step 1: Preconditions
 
