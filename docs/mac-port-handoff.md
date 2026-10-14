@@ -10,6 +10,7 @@ The full background is in `docs/mac-migration-plan.md`.
 | Laptop inventory (`apps.csv`, `pip.txt`, `pip-fia.txt`, `task-actions.csv`, `tasks/*.xml`) | Done, on the laptop in `C:\Users\frank` |
 | Secret scan before pushing to GitHub | Claude_Discovery and FIA clean. Colvard Intelligence has 1 hit (commit `94a165d`, an audit `.md`), not yet resolved |
 | Pushing Colvard Intelligence, Claude_Discovery and FIA to private GitHub repos | **Not done** (`gh` wasn't logged in on the laptop) |
+| Target GitHub owner for all code | `Colvard-Sausages`. The BI repo is to be **transferred** from `MyLiege-FJB` (plan §4). Not done |
 | Copying the folders to the Mac (plan §4, Pass 1) | **Not done** |
 | Mac tools (`deploy/mac/bootstrap.sh`) | Run it first |
 

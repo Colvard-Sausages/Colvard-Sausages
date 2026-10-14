@@ -10,7 +10,7 @@ Labels: **[fact]** verified, **[inf]** inference, **[judg]** judgment call.
 - **Do not wipe the laptop** until the Mac has run every job cleanly for ~2 weeks. Three of the four code repos exist **only** there **[fact]**:
   | Repo (laptop folder) | GitHub remote | Uncommitted files | Worktrees |
   |---|---|---|---|
-  | `Claude v1` (BI pipeline) | `MyLiege-FJB/colvard-bi-system` | 512 | 14 (7 locked) |
+  | `Claude v1` (BI pipeline) | `MyLiege-FJB/colvard-bi-system`, moving to `Colvard-Sausages` (§4) | 512 | 14 (7 locked) |
   | `Colvard Intelligence` (incl. pricing_studio) | **none** | 4 | 0 |
   | `Claude_Discovery` | **none** | 202 | 1 |
   | `FIA` | **none** | 1 | 1 (`phase2`) |
@@ -96,7 +96,23 @@ python -m playwright install chromium
 ```powershell
 git log --all --name-only --format= | sort -Unique | sls '\.env$|token|secret|credential|\.pem$'
 ```
-If nothing sensitive shows up: `gh repo create MyLiege-FJB/<name> --private --source . --remote origin` then `git push origin --all`. Uncommitted files and worktrees travel with the folder copy either way; don't bulk-commit 512 unknown files just to move them.
+**Home for all Colvard code: the `Colvard-Sausages` GitHub owner (decided 2026-10-14).**
+
+*New repos (laptop, after `gh auth login` as `Frank-Bukoski`, who can push to `Colvard-Sausages`):* if nothing sensitive shows up, run this in each repo folder:
+```powershell
+gh repo create Colvard-Sausages/<name> --private --source . --remote origin; if ($?) { git push origin --all }
+```
+Names: `colvard-intelligence`, `colvard-claude-discovery`, `fia`. **[judg]** If FIA isn't Colvard business, give it its own home instead.
+
+*Existing BI repo (`MyLiege-FJB/colvard-bi-system`):* use a **transfer**, not a copy. A transfer keeps history, issues and PRs, and GitHub redirects the old URL **[fact]**.
+1. On github.com, signed in as the account that owns `MyLiege-FJB`: open the repo → **Settings → General → Danger Zone → Transfer ownership** → new owner `Colvard-Sausages`. That account must be allowed to create repos in `Colvard-Sausages`; if it isn't, invite it there first.
+2. On the laptop, in `Claude v1`, run `git remote set-url origin https://github.com/Colvard-Sausages/colvard-bi-system.git`. The redirect would work, but it breaks if anything is ever created at the old name.
+3. Check afterwards **[inf]**:
+   - Cloudflare Pages: if a project is Git-connected to this repo, reconnect it. Its GitHub-app access was granted to `MyLiege-FJB`, not the new owner. Projects deployed with `wrangler pages deploy` aren't affected.
+   - Repo **Settings → Secrets and variables**.
+   - Any deploy keys.
+
+Uncommitted files and worktrees travel with the folder copy either way; don't bulk-commit 512 unknown files just to move them. Uncommitted files and worktrees travel with the folder copy either way; don't bulk-commit 512 unknown files just to move them.
 
 **Two passes [judg]:**
 - **Pass 1, now:** copy everything while jobs keep running. Good enough for code, configs and history.
